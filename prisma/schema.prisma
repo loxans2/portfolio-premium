@@ -1,0 +1,100 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+enum Category {
+  WEBSITE
+  BRANDING
+  LOGO
+  GRAPHIC
+  OTHER
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  category    Category @default(WEBSITE)
+  excerpt     String
+  description String   @db.Text
+  coverImage  String
+  images      String[] @default([])
+  client      String?
+  year        String?
+  liveUrl     String?
+  tags        String[] @default([])
+  featured    Boolean  @default(false)
+  published   Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([published, featured])
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String   @default("Sparkles")
+  order       Int      @default(0)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  role      String?
+  content   String   @db.Text
+  image     String?
+  rating    Int      @default(5)
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Settings {
+  id           String  @id @default("singleton")
+  siteName     String  @default("Studio")
+  tagline      String  @default("Sites premium, identités sur mesure.")
+  bio          String  @db.Text
+  email        String  @default("")
+  phone        String?
+  location     String?
+  instagram    String?
+  linkedin     String?
+  github       String?
+  behance      String?
+  heroTitle    String  @default("Création digitale & identité de marque.")
+  heroSubtitle String  @default("Je conçois des sites web sur mesure, des chartes graphiques et des logos qui racontent votre histoire.")
+  aboutTitle   String  @default("À propos")
+  aboutBody    String  @db.Text
+  updatedAt    DateTime @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  body      String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
