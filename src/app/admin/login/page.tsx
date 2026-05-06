@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/admin";
@@ -35,59 +36,67 @@ export default function LoginPage() {
   }
 
   return (
+    <div className="w-full max-w-md">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
+      >
+        <ArrowLeft size={14} /> Retour au site
+      </Link>
+      <div className="rounded-2xl border border-border/60 glass p-8">
+        <h1 className="font-display text-3xl font-medium tracking-tight">
+          Espace admin
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Connectez-vous pour gérer votre contenu.
+        </p>
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="vous@email.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Mot de passe</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              placeholder="••••••••"
+            />
+          </div>
+          <Button
+            type="submit"
+            variant="gold"
+            size="lg"
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? "Connexion..." : "Se connecter"}
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center px-4 grain relative">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute top-1/3 left-1/3 h-[400px] w-[400px] rounded-full bg-gold/15 blur-3xl" />
       </div>
-      <div className="w-full max-w-md">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
-        >
-          <ArrowLeft size={14} /> Retour au site
-        </Link>
-        <div className="rounded-2xl border border-border/60 glass p-8">
-          <h1 className="font-display text-3xl font-medium tracking-tight">
-            Espace admin
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Connectez-vous pour gérer votre contenu.
-          </p>
-          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="vous@email.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-              />
-            </div>
-            <Button
-              type="submit"
-              variant="gold"
-              size="lg"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? "Connexion..." : "Se connecter"}
-            </Button>
-          </form>
-        </div>
-      </div>
+      <Suspense>
+        <LoginContent />
+      </Suspense>
     </div>
   );
 }
