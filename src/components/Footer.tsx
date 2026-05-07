@@ -94,7 +94,6 @@ export function Footer({
 
         <div className="mt-12 pt-6 border-t border-border/50 flex flex-col sm:flex-row justify-between gap-2 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} {siteName}. Tous droits réservés.</p>
-          <Link href="/admin" className="hover:text-foreground">Admin</Link>
         </div>
       </div>
     </footer>

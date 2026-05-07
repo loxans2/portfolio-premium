@@ -165,11 +165,7 @@ export default async function HomePage() {
         <Stagger className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {featured.length === 0 ? (
             <p className="col-span-full text-muted-foreground">
-              Aucun projet publié pour le moment. Connecte-toi à{" "}
-              <Link href="/admin" className="text-gold underline">
-                /admin
-              </Link>{" "}
-              pour en ajouter.
+              Aucun projet publié pour le moment.
             </p>
           ) : (
             featured.map((p) => (
