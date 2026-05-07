@@ -126,14 +126,19 @@ prisma/
 
 ## Comment ajouter du contenu
 
-1. Connecte-toi à `/admin` avec `ADMIN_EMAIL` / `ADMIN_PASSWORD`
-2. **Projets** → Nouveau projet : titre, catégorie (site web / identité / logo / graphisme), images, description, etc.
-3. **Services** : édite/ajoute les services proposés (icônes Lucide)
-4. **Témoignages** : avis clients
-5. **Paramètres** : nom du studio, hero, à propos, contact, réseaux sociaux
-6. **Messages** : tu reçois ici les demandes via le formulaire de contact
+Connecte-toi à `/admin` avec `ADMIN_EMAIL` / `ADMIN_PASSWORD`. L'espace admin contient :
 
-Toute modification est visible immédiatement sur le site (revalidation à la sauvegarde).
+1. **Projets** — sites web / identités / logos / graphismes, avec images Cloudinary, tags, lien live, mise en avant
+2. **Services** — ce que tu proposes (icônes Lucide)
+3. **Process** — étapes de ta méthode (1, 2, 3, 4) affichées sur la home
+4. **Tarifs** — forfaits avec prix, features, CTA, mise en avant possible
+5. **Stats** — compteurs animés (projets livrés, années d'expérience…)
+6. **FAQ** — questions / réponses (home, /tarifs, /faq)
+7. **Témoignages** — avis clients avec note 1-5 étoiles
+8. **Messages** — demandes reçues via le formulaire contact
+9. **Paramètres** — nom du studio, hero, bio, contact, réseaux sociaux
+
+Toute modification est visible immédiatement sur le site (revalidation auto).
 
 ## Sécurité
 
@@ -141,14 +146,30 @@ Toute modification est visible immédiatement sur le site (revalidation à la sa
 - Le mot de passe admin est haché (bcrypt) et stocké en base
 - Personne d'autre ne peut modifier le contenu — seul toi avec tes identifiants
 
-## Animations Framer Motion
+## Animations & composants premium
 
+**Framer Motion** (animations) :
 - Hero : parallax + reveal mot par mot + orbes animés
 - Scroll : reveal en cascade avec `useInView`
 - Cartes projets : zoom hover + flèche pivotante
 - Boutons : effet magnétique (suivent le curseur)
 - Navbar : sticky avec blur progressif + pill animé
-- Marquee infini sur la home
+- Marquee infini, FAQ accordéon animé
+
+**Magic UI** (`src/components/magicui/`) :
+- `BentoGrid` — grille bento expertise (sites / branding / logos)
+- `BorderBeam` — bordure animée gold sur les CTA et le forfait populaire
+- `NumberTicker` — compteurs animés au scroll (section stats)
+- `ShimmerButton`, `AuroraText`, `BlurFade`, `Spotlight`
+- `DotPattern` & `GridPattern` — fonds décoratifs SVG
+- `AnimatedGradientText` — pill avec gradient animé
+
+**Pages publiques** :
+- `/` — Hero, marquee, stats, projets, bento expertise, services, process, à propos, tarifs, témoignages, FAQ, CTA
+- `/projets`, `/projets/[slug]` — galerie filtrable + détail
+- `/services`, `/a-propos`, `/contact`
+- `/tarifs` — pricing complet + FAQ
+- `/faq` — FAQ dédiée
 
 ## Personnalisation
 

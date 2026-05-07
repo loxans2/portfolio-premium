@@ -124,6 +124,184 @@ async function main() {
     });
   }
 
+  const stats = [
+    { id: "stat-1", label: "Projets livrés", value: 42, suffix: "+", order: 1 },
+    { id: "stat-2", label: "Années d'expérience", value: 8, suffix: "", order: 2 },
+    { id: "stat-3", label: "Clients satisfaits", value: 98, suffix: "%", order: 3 },
+    { id: "stat-4", label: "Cafés bus", value: 1240, suffix: "", order: 4 },
+  ];
+  for (const s of stats) {
+    await prisma.stat.upsert({
+      where: { id: s.id },
+      update: s,
+      create: s,
+    });
+  }
+
+  const steps = [
+    {
+      id: "step-1",
+      title: "Discovery",
+      description:
+        "On échange autour de votre vision, vos objectifs, votre cible. Je formalise un brief précis.",
+      icon: "MessageCircle",
+      duration: "1 semaine",
+      order: 1,
+    },
+    {
+      id: "step-2",
+      title: "Direction artistique",
+      description:
+        "Recherche de moodboards, exploration typographique et chromatique. Validation d'une direction.",
+      icon: "Palette",
+      duration: "1-2 semaines",
+      order: 2,
+    },
+    {
+      id: "step-3",
+      title: "Design & développement",
+      description:
+        "Je conçois et code l'identité ou le site, en allers-retours réguliers avec vous.",
+      icon: "Wand2",
+      duration: "2-4 semaines",
+      order: 3,
+    },
+    {
+      id: "step-4",
+      title: "Livraison & suivi",
+      description:
+        "Mise en ligne, formation, livrables sources. Support post-projet inclus.",
+      icon: "Rocket",
+      duration: "1 semaine",
+      order: 4,
+    },
+  ];
+  for (const s of steps) {
+    await prisma.processStep.upsert({
+      where: { id: s.id },
+      update: s,
+      create: s,
+    });
+  }
+
+  const plans = [
+    {
+      id: "plan-1",
+      name: "Logo",
+      price: "À partir de 690 €",
+      priceSuffix: "",
+      description: "Un symbole unique, modulaire, pensé pour durer.",
+      features: [
+        "3 propositions créatives",
+        "2 allers-retours",
+        "Logo principal + variantes",
+        "Fichiers vectoriels (SVG, PDF, PNG)",
+        "Charte d'utilisation simple",
+      ],
+      cta: "Commander",
+      ctaUrl: "/contact",
+      highlighted: false,
+      order: 1,
+    },
+    {
+      id: "plan-2",
+      name: "Identité complète",
+      price: "À partir de 2 200 €",
+      priceSuffix: "",
+      description: "Logo + charte graphique complète + déclinaisons.",
+      features: [
+        "Tout le forfait Logo",
+        "Charte graphique 20 pages",
+        "Palette + typographies",
+        "Templates réseaux sociaux",
+        "Cartes de visite + papeterie",
+        "Suivi 30 jours après livraison",
+      ],
+      cta: "Démarrer",
+      ctaUrl: "/contact",
+      highlighted: true,
+      order: 2,
+    },
+    {
+      id: "plan-3",
+      name: "Site + Branding",
+      price: "Sur devis",
+      priceSuffix: "",
+      description: "Le combo : identité complète + site sur mesure.",
+      features: [
+        "Tout le forfait Identité",
+        "Site web Next.js sur mesure",
+        "Animations Framer Motion",
+        "CMS pour gérer le contenu",
+        "Déploiement + nom de domaine",
+        "3 mois de support inclus",
+      ],
+      cta: "Demander un devis",
+      ctaUrl: "/contact",
+      highlighted: false,
+      order: 3,
+    },
+  ];
+  for (const p of plans) {
+    await prisma.pricingPlan.upsert({
+      where: { id: p.id },
+      update: p,
+      create: p,
+    });
+  }
+
+  const faqs = [
+    {
+      id: "faq-1",
+      question: "Combien de temps prend un projet ?",
+      answer:
+        "Comptez 2 à 4 semaines pour un logo, 4 à 6 semaines pour une identité complète, et 6 à 10 semaines pour un site web sur mesure. Les délais exacts dépendent du périmètre et de la disponibilité des contenus.",
+      order: 1,
+    },
+    {
+      id: "faq-2",
+      question: "Comment se passe un projet avec vous ?",
+      answer:
+        "Je travaille en quatre étapes : discovery (brief approfondi), direction artistique (moodboards, exploration), design / développement (en allers-retours réguliers), et livraison (mise en ligne, formation, fichiers sources).",
+      order: 2,
+    },
+    {
+      id: "faq-3",
+      question: "À qui appartient le travail livré ?",
+      answer:
+        "À vous, intégralement. Une fois le solde réglé, vous recevez tous les fichiers sources et la cession des droits patrimoniaux pour une utilisation illimitée.",
+      order: 3,
+    },
+    {
+      id: "faq-4",
+      question: "Est-ce que vous proposez de la maintenance ?",
+      answer:
+        "Oui, après la livraison je propose un forfait de maintenance mensuel (sécurité, mises à jour, petites évolutions). Les 3 premiers mois de support sont inclus dans le pack Site + Branding.",
+      order: 4,
+    },
+    {
+      id: "faq-5",
+      question: "Acceptez-vous les paiements échelonnés ?",
+      answer:
+        "Oui : 30% à la signature, 30% à la validation des maquettes, 40% à la livraison. Pour les gros projets, on peut découper différemment.",
+      order: 5,
+    },
+    {
+      id: "faq-6",
+      question: "Travaillez-vous à distance ?",
+      answer:
+        "Oui, 100% à distance avec des points en visio réguliers. Je suis basé en France et travaille avec des clients dans toute l'Europe et au Canada.",
+      order: 6,
+    },
+  ];
+  for (const f of faqs) {
+    await prisma.faq.upsert({
+      where: { id: f.id },
+      update: f,
+      create: f,
+    });
+  }
+
   console.log("Seed terminé.");
 }
 

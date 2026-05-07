@@ -6,6 +6,10 @@ import {
   MessageSquare,
   Briefcase,
   Star,
+  HelpCircle,
+  Workflow,
+  Tags,
+  BarChart3,
 } from "lucide-react";
 import { SignOutButton } from "@/components/admin/SignOutButton";
 import { AuthSessionProvider } from "@/components/admin/SessionProvider";
@@ -14,6 +18,10 @@ const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/projets", label: "Projets", icon: FolderKanban },
   { href: "/admin/services", label: "Services", icon: Briefcase },
+  { href: "/admin/process", label: "Process", icon: Workflow },
+  { href: "/admin/pricing", label: "Tarifs", icon: Tags },
+  { href: "/admin/stats", label: "Stats", icon: BarChart3 },
+  { href: "/admin/faq", label: "FAQ", icon: HelpCircle },
   { href: "/admin/temoignages", label: "Témoignages", icon: Star },
   { href: "/admin/messages", label: "Messages", icon: MessageSquare },
   { href: "/admin/settings", label: "Paramètres", icon: Settings },

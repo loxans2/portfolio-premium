@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Code2, Palette, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, Sparkles, Code2, Palette, Wand2, Star } from "lucide-react";
 import * as Icons from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Hero } from "@/components/Hero";
@@ -7,11 +7,30 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 import { Button } from "@/components/ui/button";
 import { Marquee } from "@/components/Marquee";
+import { StatsSection } from "@/components/sections/StatsSection";
+import { ProcessSection } from "@/components/sections/ProcessSection";
+import { PricingSection } from "@/components/sections/PricingSection";
+import { FaqSection } from "@/components/sections/FaqSection";
+import { BentoCard, BentoGrid } from "@/components/magicui/bento-grid";
+import { GridPattern } from "@/components/magicui/grid-pattern";
+import { DotPattern } from "@/components/magicui/dot-pattern";
+import { BorderBeam } from "@/components/magicui/border-beam";
+import { cn } from "@/lib/utils";
 
 export const revalidate = 60;
 
 async function getData() {
-  const [settings, featured, services, testimonials] = await Promise.all([
+  const [
+    settings,
+    featured,
+    services,
+    testimonials,
+    stats,
+    steps,
+    plans,
+    faqs,
+    projectsByCategory,
+  ] = await Promise.all([
     prisma.settings.findUnique({ where: { id: "singleton" } }).catch(() => null),
     prisma.project
       .findMany({
@@ -21,10 +40,7 @@ async function getData() {
       })
       .catch(() => []),
     prisma.service
-      .findMany({
-        where: { published: true },
-        orderBy: { order: "asc" },
-      })
+      .findMany({ where: { published: true }, orderBy: { order: "asc" } })
       .catch(() => []),
     prisma.testimonial
       .findMany({
@@ -33,8 +49,41 @@ async function getData() {
         take: 6,
       })
       .catch(() => []),
+    prisma.stat
+      .findMany({ where: { published: true }, orderBy: { order: "asc" } })
+      .catch(() => []),
+    prisma.processStep
+      .findMany({ where: { published: true }, orderBy: { order: "asc" } })
+      .catch(() => []),
+    prisma.pricingPlan
+      .findMany({ where: { published: true }, orderBy: { order: "asc" } })
+      .catch(() => []),
+    prisma.faq
+      .findMany({
+        where: { published: true },
+        orderBy: { order: "asc" },
+        take: 6,
+      })
+      .catch(() => []),
+    prisma.project
+      .findMany({
+        where: { published: true },
+        orderBy: { createdAt: "desc" },
+        take: 12,
+      })
+      .catch(() => []),
   ]);
-  return { settings, featured, services, testimonials };
+  return {
+    settings,
+    featured,
+    services,
+    testimonials,
+    stats,
+    steps,
+    plans,
+    faqs,
+    projectsByCategory,
+  };
 }
 
 function ServiceIcon({ name }: { name: string }) {
@@ -43,12 +92,27 @@ function ServiceIcon({ name }: { name: string }) {
 }
 
 export default async function HomePage() {
-  const { settings, featured, services, testimonials } = await getData();
+  const {
+    settings,
+    featured,
+    services,
+    testimonials,
+    stats,
+    steps,
+    plans,
+    faqs,
+    projectsByCategory,
+  } = await getData();
+
   const heroTitle =
     settings?.heroTitle ?? "Création digitale & identité de marque.";
   const heroSubtitle =
     settings?.heroSubtitle ??
     "Je conçois des sites web sur mesure, des chartes graphiques et des logos qui racontent votre histoire.";
+
+  const websites = projectsByCategory.filter((p) => p.category === "WEBSITE").slice(0, 1)[0];
+  const brandings = projectsByCategory.filter((p) => p.category === "BRANDING").slice(0, 1)[0];
+  const logos = projectsByCategory.filter((p) => p.category === "LOGO").slice(0, 1)[0];
 
   return (
     <>
@@ -77,8 +141,11 @@ export default async function HomePage() {
         </Marquee>
       </section>
 
+      {/* Stats */}
+      <StatsSection stats={stats} />
+
       {/* Featured projects */}
-      <section className="container py-24 md:py-32">
+      <section className="container py-24 md:py-32 border-t border-border/40">
         <Reveal className="mb-12 flex items-end justify-between gap-6 flex-wrap">
           <div>
             <p className="text-xs uppercase tracking-widest text-gold mb-3">
@@ -122,7 +189,113 @@ export default async function HomePage() {
         </Stagger>
       </section>
 
-      {/* Services */}
+      {/* Bento expertise */}
+      {(websites || brandings || logos) && (
+        <section className="container py-24 md:py-32 border-t border-border/40">
+          <Reveal className="max-w-3xl mb-16">
+            <p className="text-xs uppercase tracking-widest text-gold mb-3">
+              Expertise
+            </p>
+            <h2 className="font-display text-4xl font-medium tracking-tight md:text-6xl text-balance">
+              Trois savoir-faire, une vision.
+            </h2>
+          </Reveal>
+
+          <BentoGrid className="lg:grid-rows-3 lg:auto-rows-[18rem]">
+            <BentoCard
+              name="Sites web sur mesure"
+              description="Vitrines, e-commerce, plateformes — pensés pour convertir et animés avec soin."
+              Icon={Code2}
+              href="/projets?cat=WEBSITE"
+              cta="Voir les sites"
+              className="lg:col-span-2 lg:row-span-2"
+              background={
+                <div className="absolute inset-0 overflow-hidden">
+                  {websites?.coverImage && (
+                    <img
+                      src={websites.coverImage}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover opacity-50 transition-all duration-500 group-hover:scale-105 group-hover:opacity-70 [mask-image:linear-gradient(to_top,transparent_30%,#000_100%)]"
+                    />
+                  )}
+                  <GridPattern
+                    width={32}
+                    height={32}
+                    className={cn(
+                      "[mask-image:radial-gradient(400px_circle_at_top_right,white,transparent)]",
+                    )}
+                  />
+                </div>
+              }
+            />
+            <BentoCard
+              name="Identité de marque"
+              description="Charte complète : logo, typographie, palette, déclinaisons."
+              Icon={Palette}
+              href="/projets?cat=BRANDING"
+              cta="Voir les chartes"
+              className="lg:col-span-1 lg:row-span-1"
+              background={
+                <div className="absolute inset-0 overflow-hidden opacity-60">
+                  {brandings?.coverImage && (
+                    <img
+                      src={brandings.coverImage}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover transition-all duration-500 group-hover:scale-110 [mask-image:radial-gradient(circle_at_top_right,#000,transparent_70%)]"
+                    />
+                  )}
+                </div>
+              }
+            />
+            <BentoCard
+              name="Logos & symboles"
+              description="Logos uniques, modulaires, déclinables print et digital."
+              Icon={Sparkles}
+              href="/projets?cat=LOGO"
+              cta="Voir les logos"
+              className="lg:col-span-1 lg:row-span-1"
+              background={
+                <div className="absolute inset-0">
+                  <DotPattern
+                    className={cn(
+                      "[mask-image:radial-gradient(300px_circle_at_center,white,transparent)]",
+                    )}
+                  />
+                  {logos?.coverImage && (
+                    <img
+                      src={logos.coverImage}
+                      alt=""
+                      className="absolute right-0 bottom-0 h-32 w-32 object-cover rounded-2xl opacity-60 transition-all duration-500 group-hover:scale-110"
+                    />
+                  )}
+                </div>
+              }
+            />
+            <BentoCard
+              name="Direction artistique"
+              description="Conseil et accompagnement créatif pour aligner univers visuel et stratégie."
+              Icon={Wand2}
+              href="/services"
+              cta="En savoir plus"
+              className="lg:col-span-2 lg:row-span-1"
+              background={
+                <div className="absolute inset-0">
+                  <GridPattern
+                    width={20}
+                    height={20}
+                    className={cn(
+                      "[mask-image:linear-gradient(to_right,white,transparent_70%)]",
+                    )}
+                  />
+                  <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-gold/15 blur-3xl" />
+                </div>
+              }
+            />
+          </BentoGrid>
+        </section>
+      )}
+
+      {/* Services list */}
       <section className="container py-24 md:py-32 border-t border-border/40">
         <Reveal className="max-w-3xl mb-16">
           <p className="text-xs uppercase tracking-widest text-gold mb-3">
@@ -154,6 +327,9 @@ export default async function HomePage() {
         </Stagger>
       </section>
 
+      {/* Process */}
+      <ProcessSection steps={steps} />
+
       {/* About teaser */}
       {settings && (
         <section className="container py-24 md:py-32 border-t border-border/40">
@@ -180,6 +356,9 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Pricing */}
+      <PricingSection plans={plans} />
+
       {/* Testimonials */}
       {testimonials.length > 0 && (
         <section className="container py-24 md:py-32 border-t border-border/40">
@@ -198,11 +377,18 @@ export default async function HomePage() {
                 key={t.id}
                 className="rounded-2xl border border-border/60 bg-card p-6"
               >
-                <div className="text-gold mb-4">
-                  {"★".repeat(t.rating)}
-                  <span className="text-muted-foreground/30">
-                    {"★".repeat(5 - t.rating)}
-                  </span>
+                <div className="text-gold mb-4 flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={14}
+                      className={
+                        i < t.rating
+                          ? "fill-gold"
+                          : "fill-transparent text-muted-foreground/30"
+                      }
+                    />
+                  ))}
                 </div>
                 <p className="text-foreground leading-relaxed">"{t.content}"</p>
                 <div className="mt-6 pt-4 border-t border-border/50">
@@ -217,9 +403,13 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* FAQ */}
+      <FaqSection faqs={faqs} />
+
       {/* CTA */}
       <section className="container py-24 md:py-32">
         <Reveal className="relative overflow-hidden rounded-3xl border border-border/60 glass p-10 md:p-20 text-center grain">
+          <BorderBeam size={300} duration={14} delay={0} />
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute top-0 left-1/4 h-64 w-64 rounded-full bg-gold/20 blur-3xl" />
             <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-foreground/5 blur-3xl" />
