@@ -2,18 +2,26 @@
 
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { MagneticButton } from "./MagneticButton";
 
+interface HeroProps {
+  title: string;
+  subtitle: string;
+  badge?: ReactNode;
+  primaryCta?: { label: string; href: string };
+  secondaryCta?: { label: string; href: string };
+}
+
 export function Hero({
   title,
   subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
+  badge,
+  primaryCta = { label: "Explorer le catalogue", href: "/resources" },
+  secondaryCta = { label: "Voir les abonnements", href: "/pricing" },
+}: HeroProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -27,25 +35,21 @@ export function Hero({
       ref={ref}
       className="relative min-h-[100svh] overflow-hidden grain"
     >
-      {/* Animated background orbs */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <motion.div
           className="absolute -top-40 -left-20 h-[500px] w-[500px] rounded-full bg-gold/20 blur-3xl"
-          animate={{
-            x: [0, 60, 0],
-            y: [0, 40, 0],
-            scale: [1, 1.1, 1],
-          }}
+          animate={{ x: [0, 60, 0], y: [0, 40, 0], scale: [1, 1.1, 1] }}
           transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
           className="absolute -bottom-40 -right-20 h-[600px] w-[600px] rounded-full bg-foreground/5 blur-3xl"
-          animate={{
-            x: [0, -50, 0],
-            y: [0, -30, 0],
-            scale: [1, 1.15, 1],
-          }}
+          animate={{ x: [0, -50, 0], y: [0, -30, 0], scale: [1, 1.15, 1] }}
           transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 h-[400px] w-[400px] rounded-full bg-foreground/3 blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.6, 0.4] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
@@ -61,7 +65,7 @@ export function Hero({
         >
           <Sparkles size={14} className="text-gold" />
           <span className="text-muted-foreground">
-            Disponible pour de nouveaux projets
+            {badge ?? "Nouveau : 1240+ ressources premium disponibles"}
           </span>
         </motion.div>
 
@@ -100,20 +104,19 @@ export function Hero({
         >
           <MagneticButton>
             <Button asChild size="lg" variant="gold">
-              <Link href="/projets">
-                Voir les projets <ArrowRight size={16} />
+              <Link href={primaryCta.href}>
+                {primaryCta.label} <ArrowRight size={16} />
               </Link>
             </Button>
           </MagneticButton>
           <MagneticButton>
             <Button asChild size="lg" variant="outline">
-              <Link href="/contact">Démarrer un projet</Link>
+              <Link href={secondaryCta.href}>{secondaryCta.label}</Link>
             </Button>
           </MagneticButton>
         </motion.div>
       </motion.div>
 
-      {/* Scroll indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

@@ -1,29 +1,34 @@
 import Link from "next/link";
 import {
   LayoutDashboard,
-  FolderKanban,
+  Package,
+  Users,
+  CreditCard,
+  Flag,
   Settings,
   MessageSquare,
-  Briefcase,
-  Star,
   HelpCircle,
   Workflow,
   Tags,
   BarChart3,
+  Briefcase,
+  Sparkles,
 } from "lucide-react";
 import { SignOutButton } from "@/components/admin/SignOutButton";
 import { AuthSessionProvider } from "@/components/admin/SessionProvider";
 
 const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/projets", label: "Projets", icon: FolderKanban },
-  { href: "/admin/services", label: "Services", icon: Briefcase },
-  { href: "/admin/process", label: "Process", icon: Workflow },
-  { href: "/admin/pricing", label: "Tarifs", icon: Tags },
-  { href: "/admin/stats", label: "Stats", icon: BarChart3 },
-  { href: "/admin/faq", label: "FAQ", icon: HelpCircle },
-  { href: "/admin/temoignages", label: "Témoignages", icon: Star },
+  { href: "/admin/resources", label: "Ressources", icon: Package },
+  { href: "/admin/users", label: "Utilisateurs", icon: Users },
+  { href: "/admin/subscriptions", label: "Abonnements", icon: CreditCard },
+  { href: "/admin/reports", label: "Signalements", icon: Flag },
   { href: "/admin/messages", label: "Messages", icon: MessageSquare },
+  { href: "/admin/services", label: "Avantages", icon: Briefcase },
+  { href: "/admin/process", label: "Process", icon: Workflow },
+  { href: "/admin/pricing", label: "Plans", icon: Tags },
+  { href: "/admin/stats", label: "Stats site", icon: BarChart3 },
+  { href: "/admin/faq", label: "FAQ", icon: HelpCircle },
   { href: "/admin/settings", label: "Paramètres", icon: Settings },
 ];
 
@@ -38,14 +43,15 @@ export default function AdminPanelLayout({
         <aside className="fixed inset-y-0 left-0 z-30 w-64 border-r border-border/60 bg-card/30 backdrop-blur p-6 hidden md:flex flex-col">
           <Link
             href="/admin"
-            className="font-display text-xl font-semibold mb-8"
+            className="inline-flex items-center gap-2 font-display text-xl font-semibold mb-8"
           >
-            Studio<span className="text-gold">.</span>
-            <span className="block text-xs font-sans font-normal text-muted-foreground mt-1">
+            <Sparkles size={18} className="text-gold" />
+            ResourceHub
+            <span className="block text-xs font-sans font-normal text-muted-foreground mt-1 w-full">
               Espace admin
             </span>
           </Link>
-          <nav className="flex-1 space-y-1">
+          <nav className="flex-1 space-y-0.5 overflow-y-auto scrollbar-thin">
             {nav.map((n) => {
               const Icon = n.icon;
               return (

@@ -1,178 +1,197 @@
-# Portfolio Premium
+# ResourceHub
 
-Portfolio premium pour mettre en avant tes sites web, chartes graphiques et logos. Toi seul peux modifier le contenu via l'espace admin (`/admin`).
+Plateforme premium qui centralise des ressources créatives **légales** — jeux, films, plugins, logiciels, templates, musique — créées en interne ou libres de droits.
 
 ## Stack
 
 - **Next.js 14** (App Router) + TypeScript
-- **Tailwind CSS** + shadcn/ui
-- **Framer Motion** (animations premium : reveal scroll, hero parallax, hover magnétique, transitions)
-- **Prisma** + **Postgres** (Neon recommandé)
-- **NextAuth** (auth credentials, un seul utilisateur admin)
-- **Cloudinary** (upload des images)
+- **Tailwind CSS** + shadcn/ui + Magic UI
+- **Framer Motion** (animations premium)
+- **Prisma** + **PostgreSQL** (Neon / Supabase / Railway)
+- **NextAuth** (Credentials + Google + GitHub OAuth)
+- **Stripe** (abonnements Premium / VIP)
+- **Cloudinary** (uploads + URLs signées pour téléchargements)
+
+## Fonctionnalités
+
+### Côté visiteur
+
+- Landing premium animée (Hero parallax, bento catégories, marquee, stats animées)
+- Catalogue `/resources` filtrable (catégorie / niveau d'accès / recherche / tri)
+- Page détail `/resources/[slug]` avec galerie, panneau download, favoris, signalements, avis
+- `/pricing` — 3 plans (Gratuit / Premium 9,99€ / VIP 24,99€) + tableau comparatif
+- `/account` — profil, plan, historique téléchargements, favoris, accès au Customer Portal Stripe
+- `/auth/login` & `/auth/register` — email/password + Google + GitHub
+- Téléchargements quotassés (5/mois FREE, illimités PREMIUM/VIP) avec URL Cloudinary signée 15 min
+- Gating automatique par plan (`canAccess(userPlan, resourceAccess)`)
+
+### Côté admin (`/admin`)
+
+- Dashboard avec KPI (ressources, users, abonnements actifs, DL totaux, revenu estimé)
+- **Ressources** — CRUD complet, statut DRAFT/PENDING/PUBLISHED/REJECTED, mise en avant
+- **Utilisateurs** — liste + édition rôle (USER/CONTRIBUTOR/MODERATOR/ADMIN) + plan
+- **Abonnements** — vue Stripe (actifs, annulés, paiements)
+- **Signalements** — file d'attente DMCA avec actions résoudre / dépublier
+- **Plans, Stats, FAQ, Messages, Services, Process, Paramètres** — gestion existante
 
 ## Démarrage local
 
-### 1. Installer
-
 ```bash
 npm install
-```
-
-### 2. Configurer les variables d'environnement
-
-Copie `.env.example` vers `.env` puis remplis :
-
-```bash
-DATABASE_URL="postgresql://..."         # Crée gratuitement sur https://neon.tech
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="..."                    # Génère avec: openssl rand -base64 32
-ADMIN_EMAIL="echemereau@gmail.com"
-ADMIN_PASSWORD="ton-mot-de-passe-fort"
-CLOUDINARY_CLOUD_NAME="..."              # https://cloudinary.com (gratuit)
-CLOUDINARY_API_KEY="..."
-CLOUDINARY_API_SECRET="..."
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="..."
-```
-
-### 3. Initialiser la base de données
-
-```bash
-npm run db:push     # crée les tables
-npm run db:seed     # crée ton utilisateur admin + données démo
-```
-
-### 4. Lancer le dev
-
-```bash
+cp .env.example .env       # remplis les variables
+npm run db:push            # crée les tables
+npm run db:seed            # admin + 8 ressources démo + plans
 npm run dev
 ```
 
-- Site public : http://localhost:3000
-- Admin : http://localhost:3000/admin (utilise tes identifiants `.env`)
+Visite :
+- Site : http://localhost:3000
+- Compte admin : email/password de `.env`
+- Admin panel : `http://localhost:3000/<ADMIN_SECRET>` puis `/admin/login`
 
-## Déploiement sur Netlify
+## Variables d'environnement
 
-### 1. Préparer la base de données (Neon, gratuit)
+### Requises pour démarrer
 
-1. Crée un compte sur [neon.tech](https://neon.tech)
-2. Crée un projet → copie la `DATABASE_URL` (avec `?sslmode=require`)
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL — Neon/Supabase/Railway |
+| `NEXTAUTH_URL` | http://localhost:3000 en dev |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` |
+| `ADMIN_EMAIL` + `ADMIN_PASSWORD` | seed du compte admin |
+| `ADMIN_SECRET` | URL secrète pour atteindre `/admin` |
+| `CLOUDINARY_*` (4 variables) | uploads images |
 
-### 2. Préparer Cloudinary (gratuit, 25 GB)
+### Facultatives (la plateforme tourne sans, mais les abonnements / OAuth seront désactivés)
 
-1. Crée un compte sur [cloudinary.com](https://cloudinary.com)
-2. Dashboard → récupère `Cloud Name`, `API Key`, `API Secret`
+| Variable | Description |
+|---|---|
+| `STRIPE_SECRET_KEY` | clé secrète Stripe |
+| `STRIPE_WEBHOOK_SECRET` | endpoint webhook `/api/stripe/webhook` |
+| `STRIPE_PRICE_PREMIUM` | ID du prix Premium (9,99€/mois) |
+| `STRIPE_PRICE_VIP` | ID du prix VIP (24,99€/mois) |
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | Console Google OAuth |
+| `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` | GitHub Settings → OAuth apps |
 
-### 3. Pousser sur GitHub
+## Configuration Stripe
 
-```bash
-git init
-git add -A
-git commit -m "init: portfolio premium"
-git remote add origin https://github.com/<ton-user>/<repo>.git
-git push -u origin main
-```
+1. Dashboard Stripe → **Products** → crée 2 prix récurrents (9,99€/mois "Premium", 24,99€/mois "VIP")
+2. Récupère les IDs `price_...` → mets-les dans `STRIPE_PRICE_PREMIUM` et `STRIPE_PRICE_VIP`
+3. **Developers → Webhooks** → ajoute endpoint `https://<ton-site>/api/stripe/webhook` avec les events :
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.payment_succeeded`
+   - `invoice.payment_failed`
+4. Copie le `Signing secret` → `STRIPE_WEBHOOK_SECRET`
 
-### 4. Déployer sur Netlify
+Test local : `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 
-1. Va sur [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project**
-2. Connecte ton repo GitHub
-3. Build command : `npm run build` — Publish directory : `.next`
-4. **Site settings → Environment variables** : ajoute toutes les variables du `.env` :
-   - `DATABASE_URL`
-   - `NEXTAUTH_URL` → `https://<ton-site>.netlify.app`
-   - `NEXTAUTH_SECRET`
-   - `ADMIN_EMAIL`
-   - `ADMIN_PASSWORD`
-   - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
-   - `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
-5. Première fois : ouvre le shell Netlify ou exécute en local pointé vers la prod :
-   ```bash
-   DATABASE_URL="<prod-url>" npm run db:push
-   ADMIN_EMAIL=... ADMIN_PASSWORD=... DATABASE_URL="<prod-url>" npm run db:seed
-   ```
-6. Deploy 🚀
+## Configuration OAuth
 
-## Structure
+### Google
+1. https://console.cloud.google.com → **APIs & Services → Credentials → OAuth client ID** (type Web)
+2. Redirect URI : `http://localhost:3000/api/auth/callback/google` (+ prod)
+3. Copie `Client ID` et `Secret` dans `.env`
+
+### GitHub
+1. https://github.com/settings/developers → **New OAuth App**
+2. Authorization callback URL : `http://localhost:3000/api/auth/callback/github` (+ prod)
+3. Copie `Client ID` et génère un `Secret`
+
+## Architecture
 
 ```
 src/
   app/
-    (public)/             # Site vitrine — accessible à tous
-      page.tsx            # Accueil
-      projets/            # Liste + détail
-      services/
-      a-propos/
-      contact/
+    (public)/
+      page.tsx                # Landing
+      resources/              # Catalogue + filtres + détail
+      pricing/                # Plans + tableau comparatif
+      account/                # Espace user (profil, DL, favoris)
+      a-propos/, contact/, faq/
+    auth/
+      login/, register/       # NextAuth credentials + OAuth
     admin/
-      login/              # Connexion (publique)
-      (panel)/            # Espace admin — protégé par middleware
-        page.tsx          # Dashboard
-        projets/          # CRUD projets
-        services/         # CRUD services
-        temoignages/
-        settings/         # Réglages globaux
-        messages/         # Messages reçus
+      login/                  # Login admin (cookie + JWT)
+      (panel)/
+        resources/            # CRUD ressources
+        users/                # Gestion users + rôles + plans
+        subscriptions/        # Vue Stripe
+        reports/              # Modération DMCA
+        ... (services, faq, etc.)
     api/
-      auth/[...nextauth]/ # NextAuth
-      admin/upload/       # Upload images (auth requis)
-  components/             # Composants UI partagés
-  lib/                    # prisma, auth, cloudinary, utils
-  middleware.ts           # Protège /admin/* et /api/admin/*
+      auth/[...nextauth]/
+      auth/register/          # Création compte
+      stripe/
+        checkout/             # POST plan -> URL Stripe Checkout
+        portal/               # POST -> Customer Portal
+        webhook/              # Stripe events -> Prisma sync
+      resources/[slug]/
+        favorite/             # POST toggle
+        report/               # POST DMCA
+        comments/             # GET/POST avis
+        download/             # POST quota + log + URL signée
+      admin/
+        resources/[id]/       # PUT/PATCH/DELETE
+        users/[id]/
+        reports/[id]/
+        upload/               # Cloudinary upload
+  components/
+    Hero, Navbar, Footer, ResourceCard
+    ResourceActions          # Favoris + signalement + DL (client)
+    ResourceComments         # Avis + notes (client)
+    OAuthButtons             # Boutons Google + GitHub
+    PricingCta               # Bouton Stripe checkout
+    admin/                   # ResourceForm, ImageUpload
+    magicui/                 # 10 composants Magic UI
+    sections/                # Pricing / Process / Stats / FAQ
+  lib/
+    auth.ts, prisma.ts
+    stripe.ts                # SDK + helpers planFromPriceId
+    cloudinary.ts            # upload + signCloudinaryUrl
+    utils.ts                 # categoryLabel, accessLabel, canAccess, etc.
+  middleware.ts              # Double verrou /admin (cookie + JWT)
 prisma/
-  schema.prisma
-  seed.ts
+  schema.prisma              # User, Resource, Favorite, Download, Comment,
+                             # Report, Subscription, Payment, ...
+  seed.ts                    # admin + 8 ressources + 3 plans + FAQ
 ```
-
-## Comment ajouter du contenu
-
-Connecte-toi à `/admin` avec `ADMIN_EMAIL` / `ADMIN_PASSWORD`. L'espace admin contient :
-
-1. **Projets** — sites web / identités / logos / graphismes, avec images Cloudinary, tags, lien live, mise en avant
-2. **Services** — ce que tu proposes (icônes Lucide)
-3. **Process** — étapes de ta méthode (1, 2, 3, 4) affichées sur la home
-4. **Tarifs** — forfaits avec prix, features, CTA, mise en avant possible
-5. **Stats** — compteurs animés (projets livrés, années d'expérience…)
-6. **FAQ** — questions / réponses (home, /tarifs, /faq)
-7. **Témoignages** — avis clients avec note 1-5 étoiles
-8. **Messages** — demandes reçues via le formulaire contact
-9. **Paramètres** — nom du studio, hero, bio, contact, réseaux sociaux
-
-Toute modification est visible immédiatement sur le site (revalidation auto).
 
 ## Sécurité
 
-- Les routes `/admin/*` (sauf `/admin/login`) et `/api/admin/*` sont protégées par middleware NextAuth
-- Le mot de passe admin est haché (bcrypt) et stocké en base
-- Personne d'autre ne peut modifier le contenu — seul toi avec tes identifiants
+- `/admin/*` derrière double verrou (cookie httpOnly + JWT NextAuth)
+- API admin vérifie `role === ADMIN || MODERATOR` côté serveur
+- Téléchargements gatés par plan utilisateur (`canAccess`)
+- URL Cloudinary signée 15 min pour les fichiers protégés
+- Quota free 5 DL/mois enforced server-side
+- Mots de passe bcrypt (10 rounds)
+- DMCA signalement → file admin, dépublication 1-clic
 
-## Animations & composants premium
+## Roadmap
 
-**Framer Motion** (animations) :
-- Hero : parallax + reveal mot par mot + orbes animés
-- Scroll : reveal en cascade avec `useInView`
-- Cartes projets : zoom hover + flèche pivotante
-- Boutons : effet magnétique (suivent le curseur)
-- Navbar : sticky avec blur progressif + pill animé
-- Marquee infini, FAQ accordéon animé
+### Sprint 3 (à venir)
 
-**Magic UI** (`src/components/magicui/`) :
-- `BentoGrid` — grille bento expertise (sites / branding / logos)
-- `BorderBeam` — bordure animée gold sur les CTA et le forfait populaire
-- `NumberTicker` — compteurs animés au scroll (section stats)
-- `ShimmerButton`, `AuroraText`, `BlurFade`, `Spotlight`
-- `DotPattern` & `GridPattern` — fonds décoratifs SVG
-- `AnimatedGradientText` — pill avec gradient animé
+- **i18n FR/EN** via next-intl — refactor de tous les textes en clés
+- **Recherche avancée** (Algolia ou Postgres FTS)
+- **Notifications email** (Resend) — bienvenue, paiement, signalement résolu
+- **Mode contributeur** — UI publique pour proposer une ressource
+- **Page publique créateur** — `/c/[slug]`
+- **Tests** — Playwright e2e + Vitest unit
+- **Sitemap dynamique** + balises OG par ressource
+- **Dark/light mode toggle** dans la navbar
 
-**Pages publiques** :
-- `/` — Hero, marquee, stats, projets, bento expertise, services, process, à propos, tarifs, témoignages, FAQ, CTA
-- `/projets`, `/projets/[slug]` — galerie filtrable + détail
-- `/services`, `/a-propos`, `/contact`
-- `/tarifs` — pricing complet + FAQ
-- `/faq` — FAQ dédiée
+## Déploiement Netlify
 
-## Personnalisation
-
-- Couleur d'accent (or) : modifiable dans `src/app/globals.css` (variable `--gold`)
-- Polices : `Fraunces` (titres) + `Inter` (corps), changeables dans `src/app/layout.tsx`
-- Theme : light + dark (via `next-themes`)
+1. Push le repo sur GitHub
+2. Netlify → Import → connect repo
+3. Build : `npm run build` — Publish : `.next`
+4. Environment variables : tout `.env` + `NEXTAUTH_URL` = ton URL Netlify
+5. Premier déploiement :
+   ```bash
+   DATABASE_URL="<prod-url>" npm run db:push
+   DATABASE_URL="<prod-url>" npm run db:seed
+   ```
+6. Configure le webhook Stripe sur l'URL prod
+7. Configure les redirect URI OAuth sur l'URL prod

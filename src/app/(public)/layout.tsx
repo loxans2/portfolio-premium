@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { AuthSessionProvider } from "@/components/admin/SessionProvider";
 import { prisma } from "@/lib/prisma";
 
 async function getSettings() {
@@ -17,16 +18,16 @@ export default async function PublicLayout({
 }) {
   const s = await getSettings();
   return (
-    <>
-      <Navbar siteName={s?.siteName ?? "Studio"} />
+    <AuthSessionProvider>
+      <Navbar siteName={s?.siteName ?? "ResourceHub"} />
       <main className="min-h-screen">{children}</main>
       <Footer
-        siteName={s?.siteName ?? "Studio"}
+        siteName={s?.siteName ?? "ResourceHub"}
         email={s?.email ?? ""}
         instagram={s?.instagram}
         linkedin={s?.linkedin}
         github={s?.github}
       />
-    </>
+    </AuthSessionProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, ResourceCategory, ResourceAccess } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -10,8 +10,14 @@ async function main() {
   const hash = await bcrypt.hash(password, 10);
   await prisma.user.upsert({
     where: { email },
-    update: { password: hash },
-    create: { email, password: hash, name: "Admin" },
+    update: { password: hash, role: "ADMIN", plan: "VIP" },
+    create: {
+      email,
+      password: hash,
+      name: "Admin",
+      role: "ADMIN",
+      plan: "VIP",
+    },
   });
 
   await prisma.settings.upsert({
@@ -19,116 +25,194 @@ async function main() {
     update: {},
     create: {
       id: "singleton",
-      siteName: "Studio",
-      tagline: "Sites premium, identités sur mesure.",
-      bio: "Designer & développeur indépendant. Je crée des expériences digitales qui marquent.",
+      siteName: "ResourceHub",
+      tagline: "Toutes vos ressources premium, au même endroit.",
+      bio:
+        "ResourceHub centralise des ressources créatives — jeux, films, plugins, logiciels, templates — créés par notre équipe ou libres de droits, accessibles aux membres.",
       email,
-      heroTitle: "Création digitale & identité de marque.",
+      heroTitle: "Toutes vos ressources premium, au même endroit.",
       heroSubtitle:
-        "Je conçois des sites web sur mesure, des chartes graphiques et des logos qui racontent votre histoire.",
+        "Jeux, films, plugins, logiciels, templates. Créés par nous, libres de droits, accessibles aux abonnés.",
       aboutTitle: "À propos",
       aboutBody:
-        "Designer indépendant passionné, j'aide les marques à se distinguer grâce à des identités visuelles fortes et des sites web pensés pour convertir. Chaque projet est unique et mérite une approche sur mesure.",
+        "ResourceHub est une plateforme communautaire qui rassemble du contenu créatif de qualité. Chaque ressource est validée par notre équipe pour garantir originalité et conformité légale.",
     },
   });
 
   const services = [
     {
-      title: "Sites web sur mesure",
+      id: "svc-1",
+      title: "Téléchargements illimités",
       description:
-        "Vitrines, e-commerce, plateformes — pensés pour convertir, animés avec soin, performants sur tous écrans.",
-      icon: "Code2",
+        "Accédez à toutes les ressources sans restriction de quota avec un abonnement Premium ou VIP.",
+      icon: "Download",
       order: 1,
     },
     {
-      title: "Identité de marque",
+      id: "svc-2",
+      title: "Aucune publicité",
       description:
-        "Charte graphique complète : logo, typographie, palette, déclinaisons. Une identité cohérente et mémorable.",
-      icon: "Palette",
+        "Profitez d'une expérience 100% sans pub dès l'abonnement Premium.",
+      icon: "ShieldCheck",
       order: 2,
     },
     {
-      title: "Logo & branding",
+      id: "svc-3",
+      title: "Accès anticipé",
       description:
-        "Création de logos uniques, recherche graphique, déclinaisons print et digital. Un symbole qui vous représente.",
+        "Les VIP reçoivent les nouvelles ressources 7 jours avant tout le monde.",
       icon: "Sparkles",
       order: 3,
     },
     {
-      title: "Direction artistique",
+      id: "svc-4",
+      title: "Communauté & support",
       description:
-        "Conseil et accompagnement créatif pour aligner votre univers visuel avec votre vision business.",
-      icon: "Wand2",
+        "Discord privé, support prioritaire et possibilité de proposer vos propres ressources.",
+      icon: "Users",
       order: 4,
     },
   ];
 
   for (const s of services) {
     await prisma.service.upsert({
-      where: { id: `seed-${s.order}` },
+      where: { id: s.id },
       update: s,
-      create: { id: `seed-${s.order}`, ...s },
+      create: s,
     });
   }
 
-  const projectCount = await prisma.project.count();
-  if (projectCount === 0) {
-    await prisma.project.createMany({
-      data: [
-        {
-          slug: "restaurant-le-marais",
-          title: "Restaurant Le Marais",
-          category: "WEBSITE",
-          excerpt: "Site vitrine pour un restaurant gastronomique parisien.",
-          description:
-            "Refonte complète de l'identité digitale d'un restaurant gastronomique. Hero immersif, carte interactive, réservation en ligne, animations sur mesure.",
-          coverImage:
-            "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1600",
-          tags: ["Next.js", "Framer Motion", "Stripe"],
-          client: "Le Marais",
-          year: "2025",
-          featured: true,
-          order: 1,
-        },
-        {
-          slug: "atelier-noir-branding",
-          title: "Atelier Noir — Identité",
-          category: "BRANDING",
-          excerpt: "Charte graphique complète pour un atelier de céramique.",
-          description:
-            "Création d'une identité de marque minimaliste et raffinée pour un atelier de céramique haut de gamme. Logo, typographie, palette, supports print.",
-          coverImage:
-            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600",
-          tags: ["Branding", "Print", "Identité"],
-          client: "Atelier Noir",
-          year: "2025",
-          featured: true,
-          order: 2,
-        },
-        {
-          slug: "lumen-logo",
-          title: "Lumen — Logo",
-          category: "LOGO",
-          excerpt: "Logo et symbole pour une startup tech.",
-          description:
-            "Conception d'un logo simple, modulaire et reconnaissable pour une startup spécialisée dans l'éclairage connecté.",
-          coverImage:
-            "https://images.unsplash.com/photo-1626785774573-4b799315345d?w=1600",
-          tags: ["Logo", "Identité"],
-          client: "Lumen",
-          year: "2024",
-          featured: true,
-          order: 3,
-        },
-      ],
+  const resources = [
+    {
+      slug: "lumen-ui-kit",
+      title: "Lumen UI Kit",
+      category: ResourceCategory.TEMPLATES,
+      excerpt: "Design system complet React + Tailwind, 120 composants.",
+      description:
+        "Un design system premium prêt à l'emploi : 120 composants React + Tailwind, dark mode, thème personnalisable, exemples Figma inclus. Libre de droits pour usage commercial.",
+      coverImage:
+        "https://images.unsplash.com/photo-1561070791-2526d30994b8?w=1600",
+      tags: ["React", "Tailwind", "UI Kit", "Design System"],
+      access: ResourceAccess.PREMIUM,
+      version: "2.4.0",
+      license: "MIT",
+      featured: true,
+      order: 1,
+    },
+    {
+      slug: "aurora-lut-pack",
+      title: "Aurora LUT Pack",
+      category: ResourceCategory.PLUGINS,
+      excerpt: "32 LUTs cinématographiques pour DaVinci, Premiere & FCPX.",
+      description:
+        "Un pack de 32 LUTs originales inspirées de la cinématographie nordique. Compatible DaVinci Resolve, Premiere Pro, Final Cut Pro X. Format .cube + presets dédiés.",
+      coverImage:
+        "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1600",
+      tags: ["LUT", "Color Grading", "Video", "Free"],
+      access: ResourceAccess.FREE,
+      featured: true,
+      order: 2,
+    },
+    {
+      slug: "noir-typeface",
+      title: "Noir — Display Typeface",
+      category: ResourceCategory.TEMPLATES,
+      excerpt: "Typographie display moderne, 6 graisses, 350+ glyphes.",
+      description:
+        "Une typographie display contemporaine pensée pour les titres et l'identité de marque. 6 graisses, italiques, 350+ glyphes, ligatures, support multi-langues.",
+      coverImage:
+        "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1600",
+      tags: ["Typography", "Font", "Display"],
+      access: ResourceAccess.VIP,
+      license: "Création originale ResourceHub",
+      featured: true,
+      order: 3,
+    },
+    {
+      slug: "synthwave-music-pack",
+      title: "Synthwave Music Pack Vol. 1",
+      category: ResourceCategory.MUSIC,
+      excerpt: "12 pistes synthwave originales, libres de droits.",
+      description:
+        "12 pistes synthwave instrumentales créées en studio. Idéales pour vidéo, jeux indépendants, podcasts. Fichiers WAV + MP3 320kbps. Licence créative commerciale.",
+      coverImage:
+        "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1600",
+      tags: ["Music", "Synthwave", "Audio", "Royalty-Free"],
+      access: ResourceAccess.PREMIUM,
+      featured: true,
+      order: 4,
+    },
+    {
+      slug: "indie-platformer-template",
+      title: "Indie Platformer — Godot Template",
+      category: ResourceCategory.GAMES,
+      excerpt: "Template complet Godot 4 pour platformer 2D.",
+      description:
+        "Un template prêt à l'emploi sous Godot 4 : physique 2D, contrôleur joueur, ennemis, collectibles, système de checkpoints, menu principal. Code MIT, assets CC0.",
+      coverImage:
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600",
+      tags: ["Godot", "Game Dev", "2D", "Template"],
+      access: ResourceAccess.FREE,
+      featured: false,
+      order: 5,
+    },
+    {
+      slug: "minimal-ebook-templates",
+      title: "Pack Templates Ebook InDesign",
+      category: ResourceCategory.EBOOKS,
+      excerpt: "10 mises en page InDesign pour ebooks et lead magnets.",
+      description:
+        "10 templates InDesign + Affinity Publisher pour créer des ebooks, livres blancs ou lead magnets en quelques minutes. Polices incluses, grille modulable.",
+      coverImage:
+        "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1600",
+      tags: ["InDesign", "Ebook", "Template", "Layout"],
+      access: ResourceAccess.PREMIUM,
+      featured: false,
+      order: 6,
+    },
+    {
+      slug: "documentaire-nord",
+      title: "Court-métrage : Nord",
+      category: ResourceCategory.MOVIES,
+      excerpt: "Court-métrage documentaire 4K, créé par notre studio.",
+      description:
+        "Court-métrage documentaire de 18 minutes tourné en Islande, format 4K HDR. Production originale ResourceHub Studio. Disponible en téléchargement pour les abonnés VIP.",
+      coverImage:
+        "https://images.unsplash.com/photo-1531594896955-305a09b6b8e8?w=1600",
+      tags: ["Documentaire", "4K", "Original"],
+      access: ResourceAccess.VIP,
+      featured: false,
+      order: 7,
+    },
+    {
+      slug: "open-toolbox-cli",
+      title: "OpenToolbox CLI",
+      category: ResourceCategory.SOFTWARE,
+      excerpt: "Boîte à outils CLI multi-plateforme (Win/Mac/Linux).",
+      description:
+        "CLI open-source qui regroupe 40 utilitaires devs (conversion, hashing, snippets, etc.). Binaires signés pour Windows, macOS, Linux. Licence Apache 2.0.",
+      coverImage:
+        "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1600",
+      tags: ["CLI", "Open Source", "Dev Tools"],
+      access: ResourceAccess.FREE,
+      featured: false,
+      order: 8,
+    },
+  ];
+
+  for (const r of resources) {
+    await prisma.resource.upsert({
+      where: { slug: r.slug },
+      update: r,
+      create: r,
     });
   }
 
   const stats = [
-    { id: "stat-1", label: "Projets livrés", value: 42, suffix: "+", order: 1 },
-    { id: "stat-2", label: "Années d'expérience", value: 8, suffix: "", order: 2 },
-    { id: "stat-3", label: "Clients satisfaits", value: 98, suffix: "%", order: 3 },
-    { id: "stat-4", label: "Cafés bus", value: 1240, suffix: "", order: 4 },
+    { id: "stat-1", label: "Ressources disponibles", value: 1240, suffix: "+", order: 1 },
+    { id: "stat-2", label: "Téléchargements", value: 85, suffix: "k", order: 2 },
+    { id: "stat-3", label: "Créateurs", value: 320, suffix: "+", order: 3 },
+    { id: "stat-4", label: "Catégories", value: 9, suffix: "", order: 4 },
   ];
   for (const s of stats) {
     await prisma.stat.upsert({
@@ -141,38 +225,37 @@ async function main() {
   const steps = [
     {
       id: "step-1",
-      title: "Discovery",
-      description:
-        "On échange autour de votre vision, vos objectifs, votre cible. Je formalise un brief précis.",
-      icon: "MessageCircle",
-      duration: "1 semaine",
+      title: "Inscrivez-vous",
+      description: "Créez votre compte gratuit en 30 secondes. Aucune carte requise.",
+      icon: "UserPlus",
+      duration: "30 sec",
       order: 1,
     },
     {
       id: "step-2",
-      title: "Direction artistique",
+      title: "Explorez le catalogue",
       description:
-        "Recherche de moodboards, exploration typographique et chromatique. Validation d'une direction.",
-      icon: "Palette",
-      duration: "1-2 semaines",
+        "Parcourez 9 catégories : jeux, films, plugins, logiciels, templates, musique, etc.",
+      icon: "Search",
+      duration: "Illimité",
       order: 2,
     },
     {
       id: "step-3",
-      title: "Design & développement",
+      title: "Téléchargez en un clic",
       description:
-        "Je conçois et code l'identité ou le site, en allers-retours réguliers avec vous.",
-      icon: "Wand2",
-      duration: "2-4 semaines",
+        "Téléchargements rapides et sécurisés. Premium et VIP sans aucune publicité.",
+      icon: "Download",
+      duration: "Instantané",
       order: 3,
     },
     {
       id: "step-4",
-      title: "Livraison & suivi",
+      title: "Profitez des mises à jour",
       description:
-        "Mise en ligne, formation, livrables sources. Support post-projet inclus.",
-      icon: "Rocket",
-      duration: "1 semaine",
+        "Nouveaux contenus chaque semaine. Accès anticipé pour les abonnés VIP.",
+      icon: "Sparkles",
+      duration: "Hebdo",
       order: 4,
     },
   ];
@@ -186,58 +269,56 @@ async function main() {
 
   const plans = [
     {
-      id: "plan-1",
-      name: "Logo",
-      price: "À partir de 690 €",
-      priceSuffix: "",
-      description: "Un symbole unique, modulaire, pensé pour durer.",
+      id: "plan-free",
+      name: "Gratuit",
+      price: "0 €",
+      priceSuffix: "/mois",
+      description: "Pour découvrir la plateforme.",
       features: [
-        "3 propositions créatives",
-        "2 allers-retours",
-        "Logo principal + variantes",
-        "Fichiers vectoriels (SVG, PDF, PNG)",
-        "Charte d'utilisation simple",
+        "Accès aux ressources gratuites",
+        "5 téléchargements / mois",
+        "Avec publicités",
+        "Support communautaire",
       ],
-      cta: "Commander",
-      ctaUrl: "/contact",
+      cta: "Créer un compte",
+      ctaUrl: "/auth/register",
       highlighted: false,
       order: 1,
     },
     {
-      id: "plan-2",
-      name: "Identité complète",
-      price: "À partir de 2 200 €",
-      priceSuffix: "",
-      description: "Logo + charte graphique complète + déclinaisons.",
+      id: "plan-premium",
+      name: "Premium",
+      price: "9,99 €",
+      priceSuffix: "/mois",
+      description: "Pour les créatifs réguliers.",
       features: [
-        "Tout le forfait Logo",
-        "Charte graphique 20 pages",
-        "Palette + typographies",
-        "Templates réseaux sociaux",
-        "Cartes de visite + papeterie",
-        "Suivi 30 jours après livraison",
+        "Toutes les ressources Premium",
+        "Téléchargements illimités",
+        "Zéro publicité",
+        "Support prioritaire",
+        "Historique des téléchargements",
       ],
-      cta: "Démarrer",
-      ctaUrl: "/contact",
+      cta: "S'abonner Premium",
+      ctaUrl: "/auth/register?plan=PREMIUM",
       highlighted: true,
       order: 2,
     },
     {
-      id: "plan-3",
-      name: "Site + Branding",
-      price: "Sur devis",
-      priceSuffix: "",
-      description: "Le combo : identité complète + site sur mesure.",
+      id: "plan-vip",
+      name: "VIP",
+      price: "24,99 €",
+      priceSuffix: "/mois",
+      description: "Pour les pros et les studios.",
       features: [
-        "Tout le forfait Identité",
-        "Site web Next.js sur mesure",
-        "Animations Framer Motion",
-        "CMS pour gérer le contenu",
-        "Déploiement + nom de domaine",
-        "3 mois de support inclus",
+        "Tout Premium inclus",
+        "Ressources VIP exclusives",
+        "Accès anticipé (7 jours)",
+        "Discord privé",
+        "Licences commerciales étendues",
+        "Téléchargement en lot",
       ],
-      cta: "Demander un devis",
-      ctaUrl: "/contact",
+      cta: "Devenir VIP",
+      ctaUrl: "/auth/register?plan=VIP",
       highlighted: false,
       order: 3,
     },
@@ -253,44 +334,44 @@ async function main() {
   const faqs = [
     {
       id: "faq-1",
-      question: "Combien de temps prend un projet ?",
+      question: "Qu'est-ce que ResourceHub ?",
       answer:
-        "Comptez 2 à 4 semaines pour un logo, 4 à 6 semaines pour une identité complète, et 6 à 10 semaines pour un site web sur mesure. Les délais exacts dépendent du périmètre et de la disponibilité des contenus.",
+        "Une plateforme qui centralise des ressources créatives — jeux, films, plugins, logiciels, templates — soit créées par notre équipe, soit libres de droits, soit proposées par des contributeurs après validation.",
       order: 1,
     },
     {
       id: "faq-2",
-      question: "Comment se passe un projet avec vous ?",
+      question: "Toutes les ressources sont-elles légales ?",
       answer:
-        "Je travaille en quatre étapes : discovery (brief approfondi), direction artistique (moodboards, exploration), design / développement (en allers-retours réguliers), et livraison (mise en ligne, formation, fichiers sources).",
+        "Oui. Chaque ressource est soit produite en interne, soit publiée sous licence libre (MIT, CC0, CC-BY, Apache, etc.), soit fournie par un créateur ayant signé une cession de droits. Tout contenu signalé est retiré sous 24h.",
       order: 2,
     },
     {
       id: "faq-3",
-      question: "À qui appartient le travail livré ?",
+      question: "Quelle est la différence entre Premium et VIP ?",
       answer:
-        "À vous, intégralement. Une fois le solde réglé, vous recevez tous les fichiers sources et la cession des droits patrimoniaux pour une utilisation illimitée.",
+        "Premium retire les publicités et débloque les téléchargements illimités sur les ressources standards. VIP ajoute les ressources exclusives, l'accès anticipé de 7 jours, le Discord privé et des licences commerciales étendues.",
       order: 3,
     },
     {
       id: "faq-4",
-      question: "Est-ce que vous proposez de la maintenance ?",
+      question: "Puis-je annuler mon abonnement ?",
       answer:
-        "Oui, après la livraison je propose un forfait de maintenance mensuel (sécurité, mises à jour, petites évolutions). Les 3 premiers mois de support sont inclus dans le pack Site + Branding.",
+        "Oui, à tout moment depuis votre espace compte. Vous conservez l'accès jusqu'à la fin de la période en cours, sans frais d'annulation.",
       order: 4,
     },
     {
       id: "faq-5",
-      question: "Acceptez-vous les paiements échelonnés ?",
+      question: "Puis-je proposer mes propres ressources ?",
       answer:
-        "Oui : 30% à la signature, 30% à la validation des maquettes, 40% à la livraison. Pour les gros projets, on peut découper différemment.",
+        "Oui ! Les abonnés Premium et VIP peuvent demander le rôle Contributeur pour publier leurs créations (validation par modérateur). Possibilité de revenus partagés selon le plan choisi.",
       order: 5,
     },
     {
       id: "faq-6",
-      question: "Travaillez-vous à distance ?",
+      question: "Quels modes de paiement acceptez-vous ?",
       answer:
-        "Oui, 100% à distance avec des points en visio réguliers. Je suis basé en France et travaille avec des clients dans toute l'Europe et au Canada.",
+        "Carte bancaire (Visa, Mastercard, Amex), Apple Pay, Google Pay, PayPal, virement SEPA. Tous les paiements sont traités via Stripe avec chiffrement de bout en bout.",
       order: 6,
     },
   ];
@@ -302,7 +383,7 @@ async function main() {
     });
   }
 
-  console.log("Seed terminé.");
+  console.log("Seed ResourceHub terminé.");
 }
 
 main()

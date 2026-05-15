@@ -8,84 +8,263 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  USER
+  CONTRIBUTOR
+  MODERATOR
+  ADMIN
 }
 
-enum Category {
-  WEBSITE
-  BRANDING
-  LOGO
-  GRAPHIC
+enum Plan {
+  FREE
+  PREMIUM
+  VIP
+}
+
+enum ResourceCategory {
+  GAMES
+  MOVIES
+  PLUGINS
+  SOFTWARE
+  FASHION
+  MUSIC
+  EBOOKS
+  TEMPLATES
   OTHER
 }
 
-model Project {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+enum ResourceStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
+enum ResourceAccess {
+  FREE
+  PREMIUM
+  VIP
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PAST_DUE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+// ============================================================
+// AUTH / USERS
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String?
+  name          String?
+  avatar        String?
+  provider      String?  // 'credentials' | 'google' | 'github'
+  providerId    String?
+  role          Role     @default(USER)
+  plan          Plan     @default(FREE)
+  bio           String?  @db.Text
+  emailVerified DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  resources     Resource[]     @relation("ResourceAuthor")
+  favorites     Favorite[]
+  downloads     Download[]
+  comments      Comment[]
+  reports       Report[]
+  subscriptions Subscription[]
+  payments      Payment[]
+
+  @@index([role])
+  @@index([plan])
+}
+
+// ============================================================
+// RESOURCES (cœur de la plateforme)
+// ============================================================
+
+model Resource {
+  id          String           @id @default(cuid())
+  slug        String           @unique
   title       String
-  category    Category @default(WEBSITE)
+  category    ResourceCategory @default(OTHER)
   excerpt     String
-  description String   @db.Text
+  description String           @db.Text
   coverImage  String
-  images      String[] @default([])
-  client      String?
-  year        String?
-  liveUrl     String?
-  tags        String[] @default([])
-  featured    Boolean  @default(false)
-  published   Boolean  @default(true)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  images      String[]         @default([])
+  fileUrl     String?
+  fileSize    String?
+  version     String?
+  license     String?
+  status      ResourceStatus   @default(PUBLISHED)
+  access      ResourceAccess   @default(FREE)
+  price       Float?           @default(0)
+  tags        String[]         @default([])
+  featured    Boolean          @default(false)
+  views       Int              @default(0)
+  downloads   Int              @default(0)
+  ratingAvg   Float            @default(0)
+  ratingCount Int              @default(0)
+  order       Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  authorId    String?
+  author      User?            @relation("ResourceAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  favorites   Favorite[]
+  downloadLogs Download[]
+  comments    Comment[]
+  reports     Report[]
 
   @@index([category])
-  @@index([published, featured])
+  @@index([status, featured])
+  @@index([access])
+  @@index([slug])
 }
 
-model Service {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  icon        String   @default("Sparkles")
-  order       Int      @default(0)
-  published   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  resourceId String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceId])
+  @@index([userId])
+  @@index([resourceId])
 }
 
-model Testimonial {
-  id        String   @id @default(cuid())
-  name      String
-  role      String?
-  content   String   @db.Text
-  image     String?
-  rating    Int      @default(5)
-  order     Int      @default(0)
-  published Boolean  @default(true)
-  createdAt DateTime @default(now())
+model Download {
+  id         String   @id @default(cuid())
+  userId     String
+  resourceId String
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([resourceId])
+  @@index([createdAt])
 }
+
+model Comment {
+  id         String   @id @default(cuid())
+  userId     String
+  resourceId String
+  body       String   @db.Text
+  rating     Int      @default(0)
+  approved   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([resourceId, approved])
+  @@index([userId])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  userId     String
+  resourceId String
+  reason     String
+  details    String?  @db.Text
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([resolved])
+  @@index([resourceId])
+}
+
+// ============================================================
+// SUBSCRIPTIONS & PAYMENTS
+// ============================================================
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  userId             String
+  plan               Plan
+  status             SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime           @default(now())
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  stripeSubId        String?            @unique
+  stripeCustomerId   String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments           Payment[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  subscriptionId  String?
+  amount          Float
+  currency        String        @default("EUR")
+  status          PaymentStatus @default(PENDING)
+  description     String?
+  stripePaymentId String?       @unique
+  createdAt       DateTime      @default(now())
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================
+// SITE CONTENT (conservé du portfolio)
+// ============================================================
 
 model Settings {
-  id           String  @id @default("singleton")
-  siteName     String  @default("Studio")
-  tagline      String  @default("Sites premium, identités sur mesure.")
-  bio          String  @db.Text
-  email        String  @default("")
+  id           String   @id @default("singleton")
+  siteName     String   @default("ResourceHub")
+  tagline      String   @default("Le hub premium de ressources créatives.")
+  bio          String   @db.Text
+  email        String   @default("")
   phone        String?
   location     String?
   instagram    String?
   linkedin     String?
   github       String?
   behance      String?
-  heroTitle    String  @default("Création digitale & identité de marque.")
-  heroSubtitle String  @default("Je conçois des sites web sur mesure, des chartes graphiques et des logos qui racontent votre histoire.")
-  aboutTitle   String  @default("À propos")
-  aboutBody    String  @db.Text
+  heroTitle    String   @default("Toutes vos ressources premium, au même endroit.")
+  heroSubtitle String   @default("Jeux, films, plugins, logiciels et plus encore. Créés par nous, libres de droits, accessibles aux abonnés.")
+  aboutTitle   String   @default("À propos")
+  aboutBody    String   @db.Text
   updatedAt    DateTime @updatedAt
 }
 
@@ -128,8 +307,8 @@ model PricingPlan {
   priceSuffix String?  @default("")
   description String
   features    String[] @default([])
-  cta         String   @default("Démarrer")
-  ctaUrl      String   @default("/contact")
+  cta         String   @default("S'abonner")
+  ctaUrl      String   @default("/auth/register")
   highlighted Boolean  @default(false)
   order       Int      @default(0)
   published   Boolean  @default(true)
@@ -146,4 +325,27 @@ model Stat {
   published Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  role      String?
+  content   String   @db.Text
+  image     String?
+  rating    Int      @default(5)
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String   @default("Sparkles")
+  order       Int      @default(0)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

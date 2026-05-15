@@ -4,25 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useScroll, useTransform, useMotionTemplate } from "framer-motion";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Sparkles } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 
 const links = [
   { href: "/", label: "Accueil" },
-  { href: "/projets", label: "Projets" },
-  { href: "/services", label: "Services" },
-  { href: "/tarifs", label: "Tarifs" },
+  { href: "/resources", label: "Ressources" },
+  { href: "/pricing", label: "Abonnements" },
+  { href: "/faq", label: "FAQ" },
   { href: "/a-propos", label: "À propos" },
   { href: "/contact", label: "Contact" },
 ];
 
-export function Navbar({ siteName = "Studio" }: { siteName?: string }) {
+export function Navbar({ siteName = "ResourceHub" }: { siteName?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { scrollY } = useScroll();
   const blur = useTransform(scrollY, [0, 100], [8, 18]);
   const backdrop = useMotionTemplate`blur(${blur}px) saturate(150%)`;
+  const { data: session } = useSession();
+  const user = session?.user as any;
 
   return (
     <motion.header
@@ -37,14 +40,15 @@ export function Navbar({ siteName = "Studio" }: { siteName?: string }) {
       >
         <Link
           href="/"
-          className="font-display text-lg font-semibold tracking-tight"
+          className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight"
         >
-          {siteName}<span className="text-gold">.</span>
+          <Sparkles size={18} className="text-gold" />
+          {siteName}
         </Link>
 
-        <ul className="hidden items-center gap-1 md:flex">
+        <ul className="hidden items-center gap-1 lg:flex">
           {links.map((l) => {
-            const active = pathname === l.href;
+            const active = pathname === l.href || (l.href !== "/" && pathname?.startsWith(l.href));
             return (
               <li key={l.href}>
                 <Link
@@ -53,7 +57,7 @@ export function Navbar({ siteName = "Studio" }: { siteName?: string }) {
                     "relative rounded-full px-4 py-2 text-sm transition-colors",
                     active
                       ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {active && (
@@ -70,16 +74,41 @@ export function Navbar({ siteName = "Studio" }: { siteName?: string }) {
           })}
         </ul>
 
-        <div className="hidden md:block">
-          <Button asChild size="sm" variant="gold">
-            <Link href="/contact">Démarrer un projet</Link>
-          </Button>
+        <div className="hidden items-center gap-2 lg:flex">
+          {user ? (
+            <>
+              {(user.role === "ADMIN" || user.role === "MODERATOR") && (
+                <Button asChild size="sm" variant="ghost">
+                  <Link href="/admin">Admin</Link>
+                </Button>
+              )}
+              <Button asChild size="sm" variant="ghost">
+                <Link href="/account">Mon compte</Link>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => signOut({ callbackUrl: "/" })}
+              >
+                Déconnexion
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button asChild size="sm" variant="ghost">
+                <Link href="/auth/login">Connexion</Link>
+              </Button>
+              <Button asChild size="sm" variant="gold">
+                <Link href="/auth/register">S'inscrire</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <button
           aria-label="Menu"
           onClick={() => setOpen((o) => !o)}
-          className="cursor-pointer md:hidden"
+          className="cursor-pointer lg:hidden"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -90,7 +119,7 @@ export function Navbar({ siteName = "Studio" }: { siteName?: string }) {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          className="container mt-2 glass rounded-2xl p-4 md:hidden"
+          className="container mt-2 glass rounded-2xl p-4 lg:hidden"
         >
           <ul className="flex flex-col gap-1">
             {links.map((l) => (
@@ -104,12 +133,40 @@ export function Navbar({ siteName = "Studio" }: { siteName?: string }) {
                 </Link>
               </li>
             ))}
-            <li className="pt-2">
-              <Button asChild variant="gold" className="w-full">
-                <Link href="/contact" onClick={() => setOpen(false)}>
-                  Démarrer un projet
-                </Link>
-              </Button>
+            <li className="pt-2 grid grid-cols-2 gap-2">
+              {user ? (
+                <>
+                  {(user.role === "ADMIN" || user.role === "MODERATOR") && (
+                    <Button asChild variant="outline">
+                      <Link href="/admin" onClick={() => setOpen(false)}>
+                        Admin
+                      </Link>
+                    </Button>
+                  )}
+                  <Button
+                    variant="gold"
+                    onClick={() => {
+                      setOpen(false);
+                      signOut({ callbackUrl: "/" });
+                    }}
+                  >
+                    Déconnexion
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild variant="outline">
+                    <Link href="/auth/login" onClick={() => setOpen(false)}>
+                      Connexion
+                    </Link>
+                  </Button>
+                  <Button asChild variant="gold">
+                    <Link href="/auth/register" onClick={() => setOpen(false)}>
+                      S'inscrire
+                    </Link>
+                  </Button>
+                </>
+              )}
             </li>
           </ul>
         </motion.div>

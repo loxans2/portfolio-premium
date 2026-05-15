@@ -1,9 +1,25 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, Code2, Palette, Wand2, Star } from "lucide-react";
+import {
+  ArrowRight,
+  Sparkles,
+  Gamepad2,
+  Film,
+  Puzzle,
+  AppWindow,
+  Music,
+  Shirt,
+  BookOpen,
+  LayoutTemplate,
+  Download,
+  ShieldCheck,
+  Crown,
+  Users,
+  Star,
+} from "lucide-react";
 import * as Icons from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Hero } from "@/components/Hero";
-import { ProjectCard } from "@/components/ProjectCard";
+import { ResourceCard } from "@/components/ResourceCard";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 import { Button } from "@/components/ui/button";
 import { Marquee } from "@/components/Marquee";
@@ -24,30 +40,23 @@ async function getData() {
     settings,
     featured,
     services,
-    testimonials,
     stats,
     steps,
     plans,
     faqs,
-    projectsByCategory,
+    recent,
+    counts,
   ] = await Promise.all([
     prisma.settings.findUnique({ where: { id: "singleton" } }).catch(() => null),
-    prisma.project
+    prisma.resource
       .findMany({
-        where: { published: true, featured: true },
+        where: { status: "PUBLISHED", featured: true },
         orderBy: [{ order: "asc" }, { createdAt: "desc" }],
         take: 6,
       })
       .catch(() => []),
     prisma.service
       .findMany({ where: { published: true }, orderBy: { order: "asc" } })
-      .catch(() => []),
-    prisma.testimonial
-      .findMany({
-        where: { published: true },
-        orderBy: { order: "asc" },
-        take: 6,
-      })
       .catch(() => []),
     prisma.stat
       .findMany({ where: { published: true }, orderBy: { order: "asc" } })
@@ -59,30 +68,29 @@ async function getData() {
       .findMany({ where: { published: true }, orderBy: { order: "asc" } })
       .catch(() => []),
     prisma.faq
-      .findMany({
-        where: { published: true },
-        orderBy: { order: "asc" },
-        take: 6,
-      })
+      .findMany({ where: { published: true }, orderBy: { order: "asc" }, take: 6 })
       .catch(() => []),
-    prisma.project
+    prisma.resource
       .findMany({
-        where: { published: true },
+        where: { status: "PUBLISHED" },
         orderBy: { createdAt: "desc" },
-        take: 12,
+        take: 8,
       })
       .catch(() => []),
+    prisma.resource
+      .groupBy({ by: ["category"], where: { status: "PUBLISHED" }, _count: true })
+      .catch(() => [] as { category: string; _count: number }[]),
   ]);
   return {
     settings,
     featured,
     services,
-    testimonials,
     stats,
     steps,
     plans,
     faqs,
-    projectsByCategory,
+    recent,
+    counts,
   };
 }
 
@@ -91,28 +99,86 @@ function ServiceIcon({ name }: { name: string }) {
   return <Icon size={28} strokeWidth={1.5} />;
 }
 
+const BENTO_CATEGORIES = [
+  {
+    key: "GAMES",
+    name: "Jeux & templates",
+    description: "Templates Godot, Unity, assets de jeu et démos jouables.",
+    Icon: Gamepad2,
+    href: "/resources?c=GAMES",
+    span: "lg:col-span-2 lg:row-span-2",
+    bg: "from-violet-500/10 to-transparent",
+  },
+  {
+    key: "MOVIES",
+    name: "Films & vidéos",
+    description: "Courts-métrages, séquences 4K, B-roll cinématographique.",
+    Icon: Film,
+    href: "/resources?c=MOVIES",
+    span: "lg:col-span-1 lg:row-span-1",
+    bg: "from-rose-500/10 to-transparent",
+  },
+  {
+    key: "PLUGINS",
+    name: "Plugins & LUTs",
+    description: "LUTs, presets Lightroom, scripts After Effects originaux.",
+    Icon: Puzzle,
+    href: "/resources?c=PLUGINS",
+    span: "lg:col-span-1 lg:row-span-1",
+    bg: "from-emerald-500/10 to-transparent",
+  },
+  {
+    key: "TEMPLATES",
+    name: "Templates & UI Kits",
+    description: "Design systems, kits Figma, templates Next.js & Tailwind.",
+    Icon: LayoutTemplate,
+    href: "/resources?c=TEMPLATES",
+    span: "lg:col-span-1 lg:row-span-1",
+    bg: "from-cyan-500/10 to-transparent",
+  },
+  {
+    key: "SOFTWARE",
+    name: "Logiciels open-source",
+    description: "Utilitaires devs, CLI multi-plateformes, outils libres.",
+    Icon: AppWindow,
+    href: "/resources?c=SOFTWARE",
+    span: "lg:col-span-1 lg:row-span-1",
+    bg: "from-amber-500/10 to-transparent",
+  },
+  {
+    key: "MUSIC",
+    name: "Musique royalty-free",
+    description: "Pistes originales libres de droits pour vidéo & jeux.",
+    Icon: Music,
+    href: "/resources?c=MUSIC",
+    span: "lg:col-span-2 lg:row-span-1",
+    bg: "from-fuchsia-500/10 to-transparent",
+  },
+];
+
 export default async function HomePage() {
   const {
     settings,
     featured,
     services,
-    testimonials,
     stats,
     steps,
     plans,
     faqs,
-    projectsByCategory,
+    recent,
+    counts,
   } = await getData();
 
   const heroTitle =
-    settings?.heroTitle ?? "Création digitale & identité de marque.";
+    settings?.heroTitle ??
+    "Toutes vos ressources premium, au même endroit.";
   const heroSubtitle =
     settings?.heroSubtitle ??
-    "Je conçois des sites web sur mesure, des chartes graphiques et des logos qui racontent votre histoire.";
+    "Jeux, films, plugins, logiciels, templates. Créés par nous, libres de droits, accessibles aux abonnés.";
 
-  const websites = projectsByCategory.filter((p) => p.category === "WEBSITE").slice(0, 1)[0];
-  const brandings = projectsByCategory.filter((p) => p.category === "BRANDING").slice(0, 1)[0];
-  const logos = projectsByCategory.filter((p) => p.category === "LOGO").slice(0, 1)[0];
+  const countMap = new Map(
+    counts.map((c: any) => [c.category as string, c._count as number]),
+  );
 
   return (
     <>
@@ -122,14 +188,14 @@ export default async function HomePage() {
       <section className="border-y border-border/40 bg-card/30">
         <Marquee duration={40}>
           {[
-            "Design éditorial",
-            "Sites premium",
-            "Identité de marque",
-            "Logo design",
-            "Direction artistique",
-            "Motion design",
-            "UX/UI",
-            "Branding complet",
+            "Jeux indépendants",
+            "Templates UI",
+            "Plugins After Effects",
+            "Musique royalty-free",
+            "LUTs cinéma",
+            "Logiciels libres",
+            "Ebooks design",
+            "Assets 3D",
           ].map((w, i) => (
             <span
               key={i}
@@ -144,7 +210,7 @@ export default async function HomePage() {
       {/* Stats */}
       <StatsSection stats={stats} />
 
-      {/* Featured projects */}
+      {/* Featured resources */}
       <section className="container py-24 md:py-32 border-t border-border/40">
         <Reveal className="mb-12 flex items-end justify-between gap-6 flex-wrap">
           <div>
@@ -152,12 +218,12 @@ export default async function HomePage() {
               Sélection
             </p>
             <h2 className="font-display text-4xl font-medium tracking-tight md:text-6xl text-balance">
-              Projets récents
+              Ressources en vedette
             </h2>
           </div>
           <Button asChild variant="outline">
-            <Link href="/projets">
-              Tous les projets <ArrowRight size={16} />
+            <Link href="/resources">
+              Tout le catalogue <ArrowRight size={16} />
             </Link>
           </Button>
         </Reveal>
@@ -165,19 +231,22 @@ export default async function HomePage() {
         <Stagger className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {featured.length === 0 ? (
             <p className="col-span-full text-muted-foreground">
-              Aucun projet publié pour le moment.
+              Aucune ressource publiée pour le moment.
             </p>
           ) : (
-            featured.map((p) => (
-              <StaggerItem key={p.id}>
-                <ProjectCard
-                  slug={p.slug}
-                  title={p.title}
-                  excerpt={p.excerpt}
-                  category={p.category}
-                  coverImage={p.coverImage}
-                  tags={p.tags}
-                  featured={p.featured}
+            featured.map((r) => (
+              <StaggerItem key={r.id}>
+                <ResourceCard
+                  slug={r.slug}
+                  title={r.title}
+                  excerpt={r.excerpt}
+                  category={r.category}
+                  access={r.access}
+                  coverImage={r.coverImage}
+                  tags={r.tags}
+                  featured={r.featured}
+                  downloads={r.downloads}
+                  ratingAvg={r.ratingAvg}
                 />
               </StaggerItem>
             ))
@@ -185,120 +254,61 @@ export default async function HomePage() {
         </Stagger>
       </section>
 
-      {/* Bento expertise */}
-      {(websites || brandings || logos) && (
-        <section className="container py-24 md:py-32 border-t border-border/40">
-          <Reveal className="max-w-3xl mb-16">
-            <p className="text-xs uppercase tracking-widest text-gold mb-3">
-              Expertise
-            </p>
-            <h2 className="font-display text-4xl font-medium tracking-tight md:text-6xl text-balance">
-              Trois savoir-faire, une vision.
-            </h2>
-          </Reveal>
-
-          <BentoGrid className="lg:grid-rows-3 lg:auto-rows-[18rem]">
-            <BentoCard
-              name="Sites web sur mesure"
-              description="Vitrines, e-commerce, plateformes — pensés pour convertir et animés avec soin."
-              Icon={Code2}
-              href="/projets?cat=WEBSITE"
-              cta="Voir les sites"
-              className="lg:col-span-2 lg:row-span-2"
-              background={
-                <div className="absolute inset-0 overflow-hidden">
-                  {websites?.coverImage && (
-                    <img
-                      src={websites.coverImage}
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover opacity-50 transition-all duration-500 group-hover:scale-105 group-hover:opacity-70 [mask-image:linear-gradient(to_top,transparent_30%,#000_100%)]"
-                    />
-                  )}
-                  <GridPattern
-                    width={32}
-                    height={32}
-                    className={cn(
-                      "[mask-image:radial-gradient(400px_circle_at_top_right,white,transparent)]",
-                    )}
-                  />
-                </div>
-              }
-            />
-            <BentoCard
-              name="Identité de marque"
-              description="Charte complète : logo, typographie, palette, déclinaisons."
-              Icon={Palette}
-              href="/projets?cat=BRANDING"
-              cta="Voir les chartes"
-              className="lg:col-span-1 lg:row-span-1"
-              background={
-                <div className="absolute inset-0 overflow-hidden opacity-60">
-                  {brandings?.coverImage && (
-                    <img
-                      src={brandings.coverImage}
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover transition-all duration-500 group-hover:scale-110 [mask-image:radial-gradient(circle_at_top_right,#000,transparent_70%)]"
-                    />
-                  )}
-                </div>
-              }
-            />
-            <BentoCard
-              name="Logos & symboles"
-              description="Logos uniques, modulaires, déclinables print et digital."
-              Icon={Sparkles}
-              href="/projets?cat=LOGO"
-              cta="Voir les logos"
-              className="lg:col-span-1 lg:row-span-1"
-              background={
-                <div className="absolute inset-0">
-                  <DotPattern
-                    className={cn(
-                      "[mask-image:radial-gradient(300px_circle_at_center,white,transparent)]",
-                    )}
-                  />
-                  {logos?.coverImage && (
-                    <img
-                      src={logos.coverImage}
-                      alt=""
-                      className="absolute right-0 bottom-0 h-32 w-32 object-cover rounded-2xl opacity-60 transition-all duration-500 group-hover:scale-110"
-                    />
-                  )}
-                </div>
-              }
-            />
-            <BentoCard
-              name="Direction artistique"
-              description="Conseil et accompagnement créatif pour aligner univers visuel et stratégie."
-              Icon={Wand2}
-              href="/services"
-              cta="En savoir plus"
-              className="lg:col-span-2 lg:row-span-1"
-              background={
-                <div className="absolute inset-0">
-                  <GridPattern
-                    width={20}
-                    height={20}
-                    className={cn(
-                      "[mask-image:linear-gradient(to_right,white,transparent_70%)]",
-                    )}
-                  />
-                  <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-gold/15 blur-3xl" />
-                </div>
-              }
-            />
-          </BentoGrid>
-        </section>
-      )}
-
-      {/* Services list */}
+      {/* Bento categories */}
       <section className="container py-24 md:py-32 border-t border-border/40">
         <Reveal className="max-w-3xl mb-16">
           <p className="text-xs uppercase tracking-widest text-gold mb-3">
-            Services
+            Catégories
           </p>
           <h2 className="font-display text-4xl font-medium tracking-tight md:text-6xl text-balance">
-            Ce que je crée pour vous.
+            Six univers, des milliers de ressources.
+          </h2>
+        </Reveal>
+
+        <BentoGrid className="lg:grid-rows-3 lg:auto-rows-[18rem]">
+          {BENTO_CATEGORIES.map(({ key, name, description, Icon, href, span, bg }) => {
+            const count = countMap.get(key) ?? 0;
+            return (
+              <BentoCard
+                key={key}
+                name={`${name}${count ? ` · ${count}` : ""}`}
+                description={description}
+                Icon={Icon}
+                href={href}
+                cta="Explorer"
+                className={span}
+                background={
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div
+                      className={cn(
+                        "absolute inset-0 bg-gradient-to-br opacity-70",
+                        bg,
+                      )}
+                    />
+                    <GridPattern
+                      width={32}
+                      height={32}
+                      className={cn(
+                        "[mask-image:radial-gradient(400px_circle_at_top_right,white,transparent)]",
+                      )}
+                    />
+                    <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-gold/10 blur-3xl" />
+                  </div>
+                }
+              />
+            );
+          })}
+        </BentoGrid>
+      </section>
+
+      {/* Why join — premium feature list (reuses services) */}
+      <section className="container py-24 md:py-32 border-t border-border/40">
+        <Reveal className="max-w-3xl mb-16">
+          <p className="text-xs uppercase tracking-widest text-gold mb-3">
+            Avantages membres
+          </p>
+          <h2 className="font-display text-4xl font-medium tracking-tight md:text-6xl text-balance">
+            L'abonnement qui change la donne.
           </h2>
         </Reveal>
 
@@ -326,78 +336,48 @@ export default async function HomePage() {
       {/* Process */}
       <ProcessSection steps={steps} />
 
-      {/* About teaser */}
-      {settings && (
+      {/* Recent resources */}
+      {recent.length > 0 && (
         <section className="container py-24 md:py-32 border-t border-border/40">
-          <div className="grid gap-12 lg:grid-cols-2 items-center">
-            <Reveal>
+          <Reveal className="mb-12 flex items-end justify-between gap-6 flex-wrap">
+            <div>
               <p className="text-xs uppercase tracking-widest text-gold mb-3">
-                {settings.aboutTitle}
+                Derniers ajouts
               </p>
-              <h2 className="font-display text-4xl font-medium tracking-tight md:text-5xl text-balance gradient-text">
-                {settings.tagline}
+              <h2 className="font-display text-4xl font-medium tracking-tight md:text-6xl text-balance">
+                Fraîchement publiées
               </h2>
-            </Reveal>
-            <Reveal delay={0.15}>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                {settings.aboutBody}
-              </p>
-              <Button asChild className="mt-8" variant="outline">
-                <Link href="/a-propos">
-                  En savoir plus <ArrowRight size={16} />
-                </Link>
-              </Button>
-            </Reveal>
-          </div>
-        </section>
-      )}
-
-      {/* Pricing */}
-      <PricingSection plans={plans} />
-
-      {/* Testimonials */}
-      {testimonials.length > 0 && (
-        <section className="container py-24 md:py-32 border-t border-border/40">
-          <Reveal className="max-w-3xl mb-16">
-            <p className="text-xs uppercase tracking-widest text-gold mb-3">
-              Témoignages
-            </p>
-            <h2 className="font-display text-4xl font-medium tracking-tight md:text-6xl text-balance">
-              Ils m'ont fait confiance.
-            </h2>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/resources">
+                Tout voir <ArrowRight size={16} />
+              </Link>
+            </Button>
           </Reveal>
 
-          <Stagger className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {testimonials.map((t) => (
-              <StaggerItem
-                key={t.id}
-                className="rounded-2xl border border-border/60 bg-card p-6"
-              >
-                <div className="text-gold mb-4 flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      size={14}
-                      className={
-                        i < t.rating
-                          ? "fill-gold"
-                          : "fill-transparent text-muted-foreground/30"
-                      }
-                    />
-                  ))}
-                </div>
-                <p className="text-foreground leading-relaxed">"{t.content}"</p>
-                <div className="mt-6 pt-4 border-t border-border/50">
-                  <p className="font-medium">{t.name}</p>
-                  {t.role && (
-                    <p className="text-sm text-muted-foreground">{t.role}</p>
-                  )}
-                </div>
+          <Stagger className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {recent.slice(0, 4).map((r) => (
+              <StaggerItem key={r.id}>
+                <ResourceCard
+                  slug={r.slug}
+                  title={r.title}
+                  excerpt={r.excerpt}
+                  category={r.category}
+                  access={r.access}
+                  coverImage={r.coverImage}
+                  tags={r.tags}
+                  featured={r.featured}
+                  downloads={r.downloads}
+                  ratingAvg={r.ratingAvg}
+                />
               </StaggerItem>
             ))}
           </Stagger>
         </section>
       )}
+
+      {/* Pricing */}
+      <PricingSection plans={plans} />
 
       {/* FAQ */}
       <FaqSection faqs={faqs} />
@@ -411,16 +391,22 @@ export default async function HomePage() {
             <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-foreground/5 blur-3xl" />
           </div>
           <h2 className="font-display text-4xl font-medium tracking-tight md:text-6xl text-balance">
-            Un projet en tête ?
+            Prêt à explorer ?
           </h2>
           <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-lg">
-            Discutons de votre vision. Je réponds sous 24h.
+            Créez votre compte gratuit en 30 secondes et débloquez l'accès aux
+            ressources libres dès maintenant.
           </p>
-          <Button asChild variant="gold" size="lg" className="mt-8">
-            <Link href="/contact">
-              Démarrer un projet <ArrowRight size={16} />
-            </Link>
-          </Button>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Button asChild variant="gold" size="lg">
+              <Link href="/auth/register">
+                Créer un compte gratuit <ArrowRight size={16} />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/pricing">Voir les plans</Link>
+            </Button>
+          </div>
         </Reveal>
       </section>
     </>

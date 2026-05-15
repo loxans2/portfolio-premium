@@ -61,11 +61,14 @@ export default async function AboutPage() {
         )}
       </Reveal>
 
-      <Reveal delay={0.3} className="mt-16">
+      <Reveal delay={0.3} className="mt-16 flex flex-wrap gap-3">
         <Button asChild variant="gold" size="lg">
-          <Link href="/contact">
-            Travaillons ensemble <ArrowRight size={16} />
+          <Link href="/resources">
+            Explorer le catalogue <ArrowRight size={16} />
           </Link>
+        </Button>
+        <Button asChild variant="outline" size="lg">
+          <Link href="/contact">Nous écrire</Link>
         </Button>
       </Reveal>
     </div>

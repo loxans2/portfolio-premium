@@ -24,3 +24,22 @@ export async function uploadImage(
       .end(buffer);
   });
 }
+
+/**
+ * Génère une URL signée Cloudinary expirante (auth_token) pour un asset privé.
+ * Si l'URL n'est pas Cloudinary, retourne null (le caller utilisera l'URL brute).
+ */
+export function signCloudinaryUrl(rawUrl: string, ttlSec = 900): string | null {
+  if (!rawUrl?.includes("res.cloudinary.com")) return null;
+  if (!process.env.CLOUDINARY_API_SECRET) return null;
+  try {
+    const match = rawUrl.match(/\/upload\/(?:v\d+\/)?(.+)$/);
+    if (!match) return null;
+    const publicId = match[1].replace(/\.[^.]+$/, "");
+    return cloudinary.utils.private_download_url(publicId, "auto", {
+      expires_at: Math.floor(Date.now() / 1000) + ttlSec,
+    });
+  } catch {
+    return null;
+  }
+}
