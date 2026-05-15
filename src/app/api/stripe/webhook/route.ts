@@ -65,9 +65,7 @@ export async function POST(req: Request) {
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (!session.subscription || !session.customer) return;
-  const userId =
-    (session.metadata?.userId as string | undefined) ??
-    (session.subscription_data as any)?.metadata?.userId;
+  const userId = session.metadata?.userId as string | undefined;
   if (!userId) return;
 
   await prisma.user.update({
